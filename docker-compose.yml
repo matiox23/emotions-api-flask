@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"  # Exponer el puerto 5000 para acceder al servidor desde fuera del contenedor
+    volumes:
+      - ./src:/app/src  # Monta el directorio local `src` en el contenedor para facilitar el desarrollo
+    environment:
+      - PYTHONUNBUFFERED=1  # Evita el almacenamiento en búfer de salida para depuración
+    deploy:
+      resources:
+        limits:
+          memory: 4g  # Limita el contenedor a 4 GB de RAM
