@@ -9,7 +9,8 @@ from src.controller.auth_controller import auth_router
 from src.exception.handler import handle_exception
 
 app = Flask(__name__)
-CORS(app)  # Inicializar CORS
+CORS(app, resources={r"/*": {"origins": "https://emotions-brown.vercel.app"}})  # Permitir solo el dominio de Vercel
+  # Inicializar CORS
 
 app.register_error_handler(HTTPException, handle_exception)
 app.register_blueprint(emotions_router, url_prefix='/api')
