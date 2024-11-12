@@ -38,7 +38,6 @@ class UserRepository:
                 session.commit()
         return user
 
-
     @staticmethod
     def exists_by_correo(user_correo:str) -> bool:
         with Session(engine) as session:
@@ -50,6 +49,22 @@ class UserRepository:
         with Session(engine) as session:
             user = session.get(User, user_id)
         return user
+
+    @staticmethod
+    def get_by_correo(user_correo: str) -> User | None:
+        with Session(engine) as session:
+            user = session.exec(select(User).where(User.correo == user_correo)).first()
+        return user
+
+    @staticmethod
+    def get_all_students() -> list[User]:
+        """Obtiene todos los usuarios con tipo_usuario 'estudiante'"""
+        with Session(engine) as session:
+            statement = select(User).where(User.tipo_usuario == "estudiante")
+            students = session.exec(statement).all()
+        return students
+
+
 
 
 

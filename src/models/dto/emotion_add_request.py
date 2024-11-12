@@ -1,7 +1,9 @@
+# src/models/dto/emotion_add_request.py
+
 from pydantic.v1 import BaseModel
-from typing import Dict
 
 class EmotionAddRequest(BaseModel):
+    id_usuario: int
     dominant_emotions: str
     angry: float
     disgust: float
@@ -10,4 +12,3 @@ class EmotionAddRequest(BaseModel):
     neutral: float
     sad: float
     surprise: float
-

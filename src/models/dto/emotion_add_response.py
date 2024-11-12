@@ -2,6 +2,7 @@ from pydantic.v1 import BaseModel
 
 class EmotionAddResponse(BaseModel):
     id: int
+    id_usuario: int
     dominant_emotions: str
     angry: float
     disgust: float

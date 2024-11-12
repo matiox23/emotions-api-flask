@@ -9,7 +9,7 @@ from src.controller.auth_controller import auth_router
 from src.exception.handler import handle_exception
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://emotions-brown.vercel.app"}})  # Permitir solo el dominio de Vercel
+CORS(app)
   # Inicializar CORS
 
 app.register_error_handler(HTTPException, handle_exception)

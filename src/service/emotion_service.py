@@ -1,91 +1,76 @@
-from venv import create
-import cv2
 import base64
 import numpy as np
+import cv2
 from deepface import DeepFace
-from typing import List, Dict
-from flask import abort
-
-from src.models.dto.emotions_request import EmotionRequestDto
-from src.models.dto.emotions_response import EmotionResponseDto
-from src.repository.emotion_repository import EmotionRepository
 from src.models.entity.emotions import Emotions
-from src.models.dto.emotion_add_request import EmotionAddRequest
-from src.models.dto.emotion_add_response import EmotionAddResponse
-
+from src.repository.emotion_repository import EmotionRepository
 
 class EmotionService:
 
-    def __init__(self,emotion_repository: EmotionRepository):
+    def __init__(self, emotion_repository: EmotionRepository):
         self.emotion_repository = emotion_repository
 
-    def get_all_emotions(self) -> List[EmotionAddResponse]:
-        emotions = self.emotion_repository.get_all()
-        return [
-            EmotionAddResponse(
-                id = emotion.id,
-                dominant_emotions = emotion.dominant_emotions,
-                angry = emotion.angry,
-                disgust = emotion.disgust,
-                fear = emotion.fear,
-                happy = emotion.happy,
-                neutral = emotion.neutral,
-                sad = emotion.sad,
-                surprise = emotion.surprise
-
-            )
-            for emotion in emotions
-        ]
-
-    def insert_emotion(self, emotion_add_request: EmotionAddRequest) -> EmotionAddResponse:
-        new_emotions = Emotions(
-            dominant_emotions= emotion_add_request.dominant_emotions,
-            angry=emotion_add_request.angry,
-            disgust=emotion_add_request.disgust,
-            fear=emotion_add_request.fear,
-            happy=emotion_add_request.happy,
-            neutral=emotion_add_request.neutral,
-            sad=emotion_add_request.sad,
-            surprise=emotion_add_request.surprise
-        )
-        created_emotions = self.emotion_repository.add(new_emotions)
-        return EmotionAddResponse(
-            id = created_emotions.id,
-            dominant_emotions = created_emotions.dominant_emotions,
-            angry = created_emotions.angry,
-            disgust = created_emotions.disgust,
-            fear = created_emotions.fear,
-            happy = created_emotions.happy,
-            neutral = created_emotions.neutral,
-            sad = created_emotions.sad,
-            surprise = created_emotions.surprise
-        )
-
-    def analyze_emotion(base64_image: str):
+    def analyze_emotion(self, base64_image: str):
         # Quitar el prefijo 'data:image/jpeg;base64,' si existe
         if base64_image.startswith("data:image"):
             base64_image = base64_image.split(",")[1]
 
-        # Decodificar la imagen base64
-        img_data = base64.b64decode(base64_image)
-        nparr = np.frombuffer(img_data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        try:
+            # Decodificar la imagen base64
+            img_data = base64.b64decode(base64_image)
+            nparr = np.frombuffer(img_data, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        except Exception as e:
+            raise ValueError("Error al decodificar la imagen: " + str(e))
 
         # Verificar si la imagen se cargó correctamente
         if img is None:
-            raise ValueError("La imagen no se pudo decodificar")
+            raise ValueError("La imagen no se pudo decodificar correctamente")
 
         # Analizar la emoción con DeepFace
-        result = DeepFace.analyze(img, actions=['emotion'], enforce_detection=False)
+        try:
+            result = DeepFace.analyze(img, actions=['emotion'], enforce_detection=False)
+        except Exception as e:
+            raise ValueError("Error al analizar la emoción: " + str(e))
 
-        return result
+        # Asegurarse de que el resultado no esté vacío
+        if not result:
+            raise ValueError("No se pudo analizar la emoción")
 
+        # Extraer el primer resultado
+        deepface_result = result[0]
+        emotion_scores = deepface_result['emotion']
+        dominant_emotion = deepface_result['dominant_emotion']
 
+        return emotion_scores, dominant_emotion
 
+    def map_emotions_to_model(self, id_usuario: int, emotion_scores: dict, dominant_emotion: str):
+        emotions = Emotions(
+            id_usuario=id_usuario,
+            dominant_emotions=dominant_emotion,
+            angry=emotion_scores.get('angry'),
+            disgust=emotion_scores.get('disgust'),
+            fear=emotion_scores.get('fear'),
+            happy=emotion_scores.get('happy'),
+            neutral=emotion_scores.get('neutral'),
+            sad=emotion_scores.get('sad'),
+            surprise=emotion_scores.get('surprise')
+        )
+        return emotions
 
+    def analyze_and_store_emotion(self, base64_image: str, user_id: int):
+        # Analizar la emoción
+        emotion_scores, dominant_emotion = self.analyze_emotion(base64_image)
 
+        # Mapear los datos al modelo Emotions
+        emotions = self.map_emotions_to_model(user_id, emotion_scores, dominant_emotion)
 
+        # Guardar la instancia en la base de datos
+        saved_emotion = self.emotion_repository.add(emotions)
 
+        return saved_emotion
 
-
-
+    def get_all_emotions(self):
+        # Obtener todas las emociones del repositorio
+        emotions = self.emotion_repository.get_all()
+        return emotions

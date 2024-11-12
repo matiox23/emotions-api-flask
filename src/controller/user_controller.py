@@ -6,6 +6,7 @@ from pydantic.v1 import ValidationError
 from werkzeug.exceptions import NotFound
 
 from src.models.dto.message_response import MessageResponse
+from src.models.dto.password_change_request import PasswordChangeRequest
 from src.repository.user_repository import UserRepository
 from src.service.user_service import UserService
 from src.models.dto.user_response import UserResponse
@@ -70,3 +71,23 @@ def delete_user(id: int):
         return jsonify({'message': e.description}), 404
     except Exception as e:
         return jsonify({'message': str(e)}), 400
+
+@user_router.route('/users/change-password', methods=['PUT'])
+@spec.validate(json=PasswordChangeRequest, resp=Response(HTTP_200=MessageResponse, HTTP_400=MessageResponse), tags=['users'])
+def change_password():
+    try:
+        data = request.get_json()
+        password_change_request = PasswordChangeRequest.parse_obj(data)
+        user_service.change_password(password_change_request)
+        return jsonify({'message': 'Contraseña actualizada exitosamente'}), HTTPStatus.OK
+    except NotFound as e:
+        return  jsonify({'message': e.description}), 404
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+
+
+@user_router.route('/users/students', methods=['GET'])
+@spec.validate(resp=Response(HTTP_200=List[UserResponse]), tags=['users'])
+def get_all_students():
+    students = user_service.get_all_students()
+    return jsonify([student.dict() for student in students]), 200

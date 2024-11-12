@@ -1,76 +1,47 @@
+from http import HTTPStatus
 from typing import List
-from flask import abort,  jsonify, request, Blueprint
+from flask import jsonify, request, Blueprint
 from spectree import Response
-from pydantic.v1 import ValidationError
+from pydantic import ValidationError
 
 from src.models.dto.emotions_request import EmotionRequestDto
-from src.models.dto.emotions_response import EmotionResponseDto
-from src.models.dto.message_response import MessageResponse
-from src.service.emotion_service import EmotionService
-from src.repository.emotion_repository import EmotionRepository
-from src.models.dto.emotion_add_request import EmotionAddRequest
 from src.models.dto.emotion_add_response import EmotionAddResponse
-from src.models.dto.error_message import ErrorResponseMessage
+from src.repository.emotion_repository import EmotionRepository
+from src.service.emotion_service import EmotionService
 from src.specification import spec
 
 emotions_router = Blueprint('emotions_router', __name__)
 
+# Inicialización del servicio y repositorio de emociones
 emotions_repository = EmotionRepository()
 emotions_service = EmotionService(emotions_repository)
 
+# Endpoint para obtener todas las emociones
 @emotions_router.route('/emotions', methods=['GET'])
-@spec.validate(resp=Response(HTTP_200=List[EmotionAddResponse]),tags=['emotions'])
+@spec.validate(resp=Response(HTTP_200=List[EmotionAddResponse]), tags=['emotions'])
 def get_all_emotions():
     emotions = emotions_service.get_all_emotions()
-    return jsonify([emotion.dict() for emotion in emotions]), 200
+    return jsonify([emotion.dict() for emotion in emotions]), HTTPStatus.OK
 
-@emotions_router.route('/emotions', methods=['POST'])
-@spec.validate(json=EmotionAddRequest, resp=Response(HTTP_201=EmotionAddResponse), tags=['emotions'])
-def create_priority():
-    try:
-        data = request.get_json()
-        emotions_request = EmotionAddRequest.parse_obj(data)
-        add_emotions = emotions_service.insert_emotion(emotions_request)
-        emotions_reponse = EmotionAddResponse.from_orm(add_emotions)
-        return jsonify(emotions_reponse.dict()), 201
-    except ValidationError as e:
-        return jsonify({"error": e.errors()}), 400
-    except Exception as e:
-        abort(400, description=str(e))
-
-
+# Endpoint para analizar y almacenar emociones
 @emotions_router.route('/emotions/analyze', methods=['POST'])
-@spec.validate(
-    json=EmotionRequestDto,
-    resp=Response(
-        HTTP_200=EmotionResponseDto,
-        HTTP_400=MessageResponse,
-        HTTP_500=MessageResponse
-    ),
-    tags=['emotions']
-)
-def analyze_emotion():
+@spec.validate(json=EmotionRequestDto, resp=Response(HTTP_201=EmotionAddResponse), tags=['emotions'])
+def analyze_and_store_emotion():
     try:
-        # Obtener los datos de la solicitud y validar el DTO
+        # Obtener datos de la solicitud utilizando EmotionRequestDto
         data = request.get_json()
-        dto = EmotionRequestDto(**data)
+        emotion_request = EmotionRequestDto.parse_obj(data)
 
-        # Llamar al servicio para procesar la emoción
-        result = EmotionService.analyze_emotion(dto.img_base64)
-
-        # Extraer solo las emociones y la emoción dominante
-        emotions = result[0]['emotion']
-        dominant_emotion = result[0]['dominant_emotion']
-
-        # Crear el ResponseDto con los datos procesados
-        response_dto = EmotionResponseDto(
-            emotions=emotions,
-            dominant_emotion=dominant_emotion
+        # Llamar al servicio para analizar y almacenar emociones
+        emotion_response = emotions_service.analyze_and_store_emotion(
+            base64_image=emotion_request.img_base64,
+            user_id=emotion_request.id_usuario
         )
 
-        # Devolver la respuesta como JSON
-        return jsonify(response_dto.dict()), 200
-
+        # Retornar la respuesta con el estado HTTP 201
+        return jsonify(emotion_response.dict()), HTTPStatus.CREATED
+    except ValidationError as e:
+        return jsonify({"error": e.errors()}), HTTPStatus.BAD_REQUEST
     except Exception as e:
-        # Manejo de errores, devuelve una respuesta de error
-        return jsonify({"error": str(e)}), 500
+        # Aquí podrías agregar un registro del error
+        return jsonify({"error": "Error interno del servidor"}), HTTPStatus.INTERNAL_SERVER_ERROR

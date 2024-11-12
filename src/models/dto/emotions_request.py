@@ -4,6 +4,7 @@ from pydantic.v1 import BaseModel, validator
 import base64
 
 class EmotionRequestDto(BaseModel):
+    id_usuario: int  # Añadido id_usuario
     img_base64: str
 
     @validator('img_base64')
