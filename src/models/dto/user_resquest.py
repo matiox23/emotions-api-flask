@@ -1,7 +1,4 @@
 from pydantic.v1 import BaseModel, EmailStr
-from datetime import datetime
-
-
 
 class UserRequest(BaseModel):
     nombre: str

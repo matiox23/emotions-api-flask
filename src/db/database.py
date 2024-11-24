@@ -1,8 +1,13 @@
 from sqlmodel import SQLModel, create_engine
+from src.models.entity.examen import Examen
+from src.models.entity.pregunta import Pregunta
+from src.models.entity.opcion_respuesta import OpcionRespuesta
+from src.models.entity.resultado import Resultado
 from src.models.entity.user import User
-from src.models.entity.emotions  import Emotions
+from src.models.entity.emotions import Emotions
 from src.models.entity.profesor import Profesor
 from src.models.entity.alumno import Alumno
+
 
 postgres_user = "postgres.cgngeqagaxepijiclnwp"
 postgres_password = "Navidada042302*"

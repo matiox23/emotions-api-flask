@@ -13,4 +13,4 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4g  # Limita el contenedor a 4 GB de RAM para evitar problemas de memoria
+          memory: 8g  # Limita el contenedor a 4 GB de RAM para evitar problemas de memoria

@@ -21,7 +21,6 @@ class UserService:
         self.user_repository = user_repository
 
 
-
     def get_all_users(self) -> List[UserResponse]:
         users = self.user_repository.get_all()
         return [
@@ -120,7 +119,10 @@ class UserService:
                 id=student.id,
                 tipo_usuario=student.tipo_usuario,
                 correo=student.correo,
-                nombre=student.nombre
+                nombre=student.nombre,
+                apellido = student.apellido,
+                sexo= student.sexo,
+                fecha_registro=student.fecha_registro
             )
             for student in students
         ]
