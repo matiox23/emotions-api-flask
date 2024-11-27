@@ -86,6 +86,9 @@ def delete_examen(id: int):
     except Exception as e:
         return jsonify({'message': str(e)}), HTTPStatus.BAD_REQUEST
 
+
+
+"""
 @examen_router.route('/examenes/<int:examen_id>/resultados', methods=['POST'])
 @spec.validate(
     json=ResultadoRequest,
@@ -109,6 +112,9 @@ def registrar_resultado(examen_id: int):
         abort(HTTPStatus.NOT_FOUND, description=str(e))
     except Exception as e:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, description=str(e))
+
+"""
+
 
 
 

@@ -1,3 +1,5 @@
+# src/controller/resultados_controller.py
+
 from http import HTTPStatus
 from typing import List
 
@@ -8,13 +10,18 @@ from src.models.dto.resultado_request import ResultadoRequest
 from src.models.dto.resultado_response import ResultadoResponseDTO
 from src.models.dto.error_response import ErrorResponse
 from src.repository.resultado_repository import ResultadoRepository
+from src.repository.examen_repository import ExamenRepository
 from src.service.resultado_service import ResultadoService
-from src.specification import spec
+from src.specification import spec  # Asegúrate de tener configurado Spectree
 
 resultado_router = Blueprint("resultado_router", __name__)
 
+# Inicializar los repositorios
 resultado_repository = ResultadoRepository()
-resultado_service = ResultadoService(resultado_repository)
+examen_repository = ExamenRepository()
+
+# Inicializar el servicio con ambos repositorios
+resultado_service = ResultadoService(resultado_repository, examen_repository)
 
 @resultado_router.route("/resultados", methods=["GET"])
 @spec.validate(resp=Response(HTTP_200=List[ResultadoResponseDTO]), tags=["resultados"])
@@ -38,18 +45,23 @@ def get_resultados_by_examen_id(examen_id: int):
     except Exception as e:
         return jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-@resultado_router.route("/resultados", methods=["POST"])
-@spec.validate(json=ResultadoRequest, resp=Response(HTTP_201=ResultadoResponseDTO, HTTP_400=ErrorResponse), tags=["resultados"])
-def save_resultado():
-    """Guarda un nuevo resultado."""
+@resultado_router.route("/examenes/<int:examen_id>/resultados", methods=["POST"])
+@spec.validate(
+    json=ResultadoRequest,
+    resp=Response(
+        HTTP_201=ResultadoResponseDTO,
+        HTTP_400=ErrorResponse
+    ),
+    tags=["resultados"]
+)
+def registrar_resultado(examen_id: int):
+    """Registra un nuevo resultado para un examen."""
     try:
         data = request.get_json()
         resultado_request = ResultadoRequest.parse_obj(data)
-        resultado = resultado_service.save_resultado(
-            usuario_id=resultado_request.usuario_id,
-            examen_id=resultado_request.respuestas[0].pregunta_id,  # Ajusta según la lógica
-            puntaje=100  # Esto debería calcularse según la lógica del examen
-        )
-        return jsonify(resultado.dict()), HTTPStatus.CREATED
+        resultado_response = resultado_service.registrar_resultado(examen_id, resultado_request)
+        return jsonify(resultado_response.dict()), HTTPStatus.CREATED
+    except NotFound as e:
+        return jsonify({"error": e.description}), HTTPStatus.NOT_FOUND
     except Exception as e:
         return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST

@@ -1,12 +1,11 @@
-from typing import Optional, List
+from typing import List
 
 from sqlalchemy.orm import joinedload
 from sqlmodel import Session, select
 from src.db.database import engine
-from src.models.dto.resultado_response import ResultadoResponseDTO, RespuestaDetalleDTO
 from src.models.entity.examen import Examen
 from src.models.entity.pregunta import Pregunta
-from src.models.entity.opcion_respuesta import OpcionRespuesta
+
 from src.models.entity.resultado import Resultado
 
 
@@ -58,14 +57,15 @@ class ExamenRepository:
     @staticmethod
     def get_by_id(examen_id: int) -> Examen | None:
         with Session(engine) as session:
-            # También cargar relaciones anticipadamente en `get_by_id`
-            return session.exec(
-                select(Examen)
-                .where(Examen.id == examen_id)
-                .options(
-                    joinedload(Examen.preguntas).joinedload(Pregunta.opciones_respuesta)
-                )
-            ).first()
+            """Obtiene un examen por su ID."""
+            with Session(engine) as session:
+                examen = session.get(Examen, examen_id)
+                if examen:
+                    # Cargar preguntas y sus opciones de respuesta
+                    examen.preguntas  # Accede a las preguntas para cargarlas
+                    for pregunta in examen.preguntas:
+                        pregunta.opciones_respuesta  # Accede a las opciones de respuesta
+                return examen
 
     """
  

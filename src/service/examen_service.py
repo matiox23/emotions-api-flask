@@ -210,4 +210,3 @@ class ExamenService:
             for resultado in resultados
         ]
         return resultados_dto
-
