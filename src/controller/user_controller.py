@@ -91,3 +91,23 @@ def change_password():
 def get_all_students():
     students = user_service.get_all_students()
     return jsonify([student.dict() for student in students]), 200
+
+
+@user_router.route("/users/<int:id>", methods=["GET"])
+@spec.validate(resp=Response(HTTP_200=UserResponse, HTTP_404=MessageResponse), tags=['users'])
+def get_user_by_id(id: int):
+    """Obtiene un usuario por su ID"""
+    try:
+        # Llamamos al servicio para obtener el usuario por su ID
+        user = user_service.get_by_id(id)
+
+        # Si el usuario existe, se devuelve como respuesta
+        user_response = UserResponse.from_orm(user)
+        return jsonify(user_response.dict()), 200
+    except NotFound as e:
+        # Si el usuario no existe, se maneja el error
+        return jsonify({'message': e.description}), 404
+    except Exception as e:
+        # Otros errores generados
+        return jsonify({'message': str(e)}), 400
+

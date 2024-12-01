@@ -10,6 +10,7 @@ from src.models.entity.respuesta_detalle import RespuestaDetalle
 from src.repository.resultado_repository import ResultadoRepository
 from src.repository.examen_repository import ExamenRepository
 
+
 class ResultadoService:
     def __init__(self, resultado_repository: ResultadoRepository, examen_repository: ExamenRepository):
         self.resultado_repository = resultado_repository
@@ -111,3 +112,50 @@ class ResultadoService:
             fecha=resultado_guardado.fecha.isoformat(),
             detalles=detalles_dto
         )
+
+    def obtener_resultados_con_usuarios(self):
+        """Obtiene los resultados con los detalles de los usuarios y el nombre del examen."""
+        try:
+            resultados_con_usuarios = self.resultado_repository.obtener_resultados_con_usuarios()
+
+            if not resultados_con_usuarios:
+                return None
+
+            # Mapea los resultados a un formato adecuado para la respuesta
+            response_data = []
+            for resultado in resultados_con_usuarios:
+                response_data.append({
+                    'resultado_id': resultado.resultado_id,
+                    'examen_id': resultado.examen_id,
+                    'puntaje': resultado.puntaje,
+                    'fecha': resultado.fecha.strftime('%Y-%m-%d %H:%M:%S'),
+                    'usuario_id': resultado.usuario_id,
+                    'nombre': resultado.nombre,
+                    'apellido': resultado.apellido,
+                    'correo': resultado.correo,
+                    'examen_nombre': resultado.examen_nombre
+                })
+
+            return response_data
+        except Exception as e:
+            raise Exception(f"Error al obtener resultados con usuarios: {str(e)}")
+
+    def get_resultados_by_usuario_id(self, usuario_id: int):
+        """Obtiene los resultados por ID del usuario incluyendo su nombre."""
+        resultados = self.resultado_repository.get_resultados_by_usuario_id(usuario_id)
+
+        if not resultados:
+            return []
+
+        return [
+            {
+                "resultado_id": resultado.resultado_id,
+                "examen_id": resultado.examen_id,
+                "examen_nombre": resultado.examen_nombre,
+                "usuario_nombre": resultado.usuario_nombre,
+                "usuario_apellido": resultado.usuario_apellido,
+                "puntaje": resultado.puntaje,
+                "fecha": resultado.fecha.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            for resultado in resultados
+        ]

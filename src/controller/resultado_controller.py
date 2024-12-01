@@ -23,6 +23,7 @@ examen_repository = ExamenRepository()
 # Inicializar el servicio con ambos repositorios
 resultado_service = ResultadoService(resultado_repository, examen_repository)
 
+
 @resultado_router.route("/resultados", methods=["GET"])
 @spec.validate(resp=Response(HTTP_200=List[ResultadoResponseDTO]), tags=["resultados"])
 def get_all_resultados():
@@ -32,6 +33,7 @@ def get_all_resultados():
         return jsonify([resultado.dict() for resultado in resultados]), HTTPStatus.OK
     except Exception as e:
         return jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+
 
 @resultado_router.route("/examenes/<int:examen_id>/resultados", methods=["GET"])
 @spec.validate(resp=Response(HTTP_200=List[ResultadoResponseDTO]), tags=["resultados"])
@@ -44,6 +46,7 @@ def get_resultados_by_examen_id(examen_id: int):
         return jsonify({"error": e.description}), HTTPStatus.NOT_FOUND
     except Exception as e:
         return jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+
 
 @resultado_router.route("/examenes/<int:examen_id>/resultados", methods=["POST"])
 @spec.validate(
@@ -65,3 +68,35 @@ def registrar_resultado(examen_id: int):
         return jsonify({"error": e.description}), HTTPStatus.NOT_FOUND
     except Exception as e:
         return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST
+
+
+@resultado_router.route('/resultados/usuarios', methods=['GET'])
+@spec.validate(
+    tags=["resultados"],
+)
+def obtener_resultados_con_usuarios():
+    """Devuelve los resultados junto con los detalles de los usuarios."""
+    try:
+        resultados_con_usuarios = resultado_service.obtener_resultados_con_usuarios()
+        if not resultados_con_usuarios:
+            return jsonify({"error": "No se encontraron resultados con los usuarios."}), HTTPStatus.NOT_FOUND
+        return jsonify(resultados_con_usuarios), HTTPStatus.OK
+    except Exception as e:
+        return jsonify({'error': str(e)}), HTTPStatus.BAD_REQUEST
+
+
+@resultado_router.route('/usuarios/<int:usuario_id>/resultados', methods=['GET'])
+@spec.validate(
+    tags=["resultados"],
+)
+def get_resultados_by_usuario_id(usuario_id: int):
+    """Devuelve los resultados asociados a un usuario por su ID, incluyendo su nombre."""
+    try:
+        resultados = resultado_service.get_resultados_by_usuario_id(usuario_id)
+
+        if not resultados:
+            return jsonify({"message": "No se encontraron resultados para este usuario."}), HTTPStatus.NOT_FOUND
+
+        return jsonify(resultados), HTTPStatus.OK
+    except Exception as e:
+        return jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR

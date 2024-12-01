@@ -54,18 +54,20 @@ class ExamenRepository:
                 return True
             return False
 
+
     @staticmethod
     def get_by_id(examen_id: int) -> Examen | None:
         with Session(engine) as session:
-            """Obtiene un examen por su ID."""
-            with Session(engine) as session:
-                examen = session.get(Examen, examen_id)
-                if examen:
-                    # Cargar preguntas y sus opciones de respuesta
-                    examen.preguntas  # Accede a las preguntas para cargarlas
-                    for pregunta in examen.preguntas:
-                        pregunta.opciones_respuesta  # Accede a las opciones de respuesta
-                return examen
+            query = (
+                select(Examen)
+                .options(
+                    joinedload(Examen.preguntas).joinedload(Pregunta.opciones_respuesta),  # Usar atributos de clase
+                    joinedload(Examen.resultados)  # Carga los resultados relacionados
+                )
+                .where(Examen.id == examen_id)
+            )
+            examen = session.exec(query).first()
+            return examen
 
     """
  

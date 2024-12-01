@@ -112,16 +112,65 @@ class ExamenService:
 
     def update_examen(self, examen_id: int, examen_dto: CrearExamenDTO) -> ExamenResponseDTO:
         """Actualiza un examen existente."""
+        # Obtener el examen por ID
         examen = self.repository.get_by_id(examen_id)
         if not examen:
             abort(404, f"El examen con id: {examen_id} no existe")
 
+        # Actualizar campos principales del examen
         examen.titulo = examen_dto.titulo
         examen.descripcion = examen_dto.descripcion
 
+        # Manejar preguntas
+        existing_questions = {pregunta.id: pregunta for pregunta in examen.preguntas}
+        updated_questions = []
+
+        for pregunta_dto in examen_dto.preguntas:
+            if pregunta_dto.id and pregunta_dto.id in existing_questions:
+                # Actualizar pregunta existente
+                pregunta = existing_questions[pregunta_dto.id]
+                pregunta.texto = pregunta_dto.texto
+
+                # Manejar opciones de respuesta
+                existing_options = {opcion.id: opcion for opcion in pregunta.opciones_respuesta}
+                updated_options = []
+
+                for opcion_dto in pregunta_dto.opciones_respuesta:
+                    if opcion_dto.id and opcion_dto.id in existing_options:
+                        # Actualizar opción existente
+                        opcion = existing_options[opcion_dto.id]
+                        opcion.texto = opcion_dto.texto
+                        opcion.es_correcta = opcion_dto.es_correcta
+                    else:
+                        # Crear nueva opción
+                        opcion = OpcionRespuesta(
+                            texto=opcion_dto.texto,
+                            es_correcta=opcion_dto.es_correcta
+                        )
+                    updated_options.append(opcion)
+
+                pregunta.opciones_respuesta = updated_options
+            else:
+                # Crear nueva pregunta
+                pregunta = Pregunta(
+                    texto=pregunta_dto.texto,
+                    opciones_respuesta=[
+                        OpcionRespuesta(
+                            texto=opcion.texto,
+                            es_correcta=opcion.es_correcta
+                        )
+                        for opcion in pregunta_dto.opciones_respuesta
+                    ]
+                )
+            updated_questions.append(pregunta)
+
+        # Asignar las preguntas actualizadas al examen
+        examen.preguntas = updated_questions
+
+        # Actualizar el examen en el repositorio
         updated_examen = self.repository.update(examen)
 
-        # Retornar la respuesta del examen actualizado
+        # Construir y retornar la respuesta del examen actualizado
         return ExamenResponseDTO(
             id=updated_examen.id,
             titulo=updated_examen.titulo,
@@ -195,7 +244,7 @@ class ExamenService:
             examen_id=nuevo_resultado.examen_id,
             puntaje=nuevo_resultado.puntaje,
             detalles=detalles,
-            fecha =  nuevo_resultado.fecha
+            fecha=nuevo_resultado.fecha
         )
 
     def obtener_todos_resultados(self) -> List[ResultadoExamenResponseDTO]:

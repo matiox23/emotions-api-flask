@@ -21,6 +21,24 @@ class UserService:
         self.user_repository = user_repository
 
 
+    def get_by_id(self, user_id) -> UserResponse:
+        """Obtiene un usuario por su ID y lo convierte a UserResponse"""
+        user = self.user_repository.get_by_id(user_id)
+        if not user:
+            abort(404, f'El usuario con id: {user_id} no existe')
+
+        return UserResponse(
+            id=user.id,
+            tipo_usuario=user.tipo_usuario,
+            correo=user.correo,
+            nombre=user.nombre,
+            apellido=user.apellido,
+            sexo=user.sexo,
+            fecha_registro=user.fecha_registro
+        )
+
+
+
     def get_all_users(self) -> List[UserResponse]:
         users = self.user_repository.get_all()
         return [
